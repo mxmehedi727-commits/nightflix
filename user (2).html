@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bd Viral Zone - Telegram Web App</title>
+
+  <!-- Telegram Web App SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <!-- Custom Rewarded Ad SDK Integrated -->
+  <script src='//libtl.com/sdk.js' data-zone='12085731' data-sdk='show_12085731'></script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    body { font-family: 'Hind Siliguri', sans-serif; background-color: #0d111a; color: #ffffff; }
+    .card-bg { background-color: #161c2e; border: 1px solid #232d48; }
+    .text-accent { color: #f97316; }
+    .btn-accent { background-color: #f97316; color: white; font-weight: bold; }
+    .btn-accent:hover { background-color: #ea580c; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .animate-fadeIn { animation: fadeIn 0.3s ease-in-out; }
+  </style>
+</head>
+
+<body class="max-w-md mx-auto min-h-screen flex flex-col justify-between">
+
+  <!-- Loader -->
+  <div id="loader" class="hidden fixed inset-0 bg-[#0d111a] bg-opacity-80 flex items-center justify-center z-50">
+    <div class="animate-spin rounded-full h-14 w-14 border-t-2 border-b-2 border-orange-500"></div>
+  </div>
+
+  <!-- App Header -->
+  <header class="flex items-center justify-between p-4 sticky top-0 bg-[#0d111a]/90 backdrop-blur-md z-20 border-b border-[#232d48]">
+    <h1 class="text-xl font-bold flex items-center gap-1">
+      Bd Viral Zone <span class="text-orange-500">🔥</span>
+    </h1>
+    <div class="bg-[#161c2e] px-3.5 py-1.5 rounded-full border border-[#232d48] flex items-center gap-1.5">
+      <span class="text-lg">🔑</span>
+      <span id="user-keys" class="font-bold text-orange-400">0</span>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-grow p-4 space-y-6">
+    
+    <!-- Watch Ad Banner -->
+    <div class="card-bg p-4 rounded-2xl flex items-center justify-between border-l-4 border-orange-500">
+      <div>
+        <h3 class="font-bold text-white flex items-center gap-1">🔑 এড দেখে চাবি নিন</h3>
+        <p class="text-xs text-gray-400 mt-1">ভিডিও দেখতে চাবি জমিয়ে নিন</p>
+      </div>
+      <button onclick="watchAdForKeys()" class="btn-accent text-xs px-4 py-2.5 rounded-xl flex items-center gap-1">
+        <i data-lucide="play-circle" class="w-4 h-4"></i> এড দেখুন
+      </button>
+    </div>
+
+    <!-- Trending Section -->
+    <section class="space-y-4">
+      <div class="flex items-center gap-2">
+        <span class="w-1.5 h-6 bg-orange-500 rounded-full"></span>
+        <h2 class="text-lg font-bold text-orange-500 flex items-center gap-1">
+          <span>🔥</span> ট্রেন্ডিং নাউ
+        </h2>
+      </div>
+      <div id="trending-container" class="space-y-4">
+        <p class="text-gray-500 text-sm text-center py-4">ভিডিও লোড হচ্ছে...</p>
+      </div>
+    </section>
+
+    <!-- Exclusive Section -->
+    <section class="space-y-4">
+      <div class="flex items-center gap-2">
+        <span class="w-1.5 h-6 bg-orange-500 rounded-full"></span>
+        <h2 class="text-lg font-bold text-orange-500 flex items-center gap-1">
+          <span>📚</span> এক্সক্লুসিভ কালেকশন
+        </h2>
+      </div>
+      <div id="exclusive-container" class="space-y-4">
+        <p class="text-gray-500 text-sm text-center py-4">ভিডিও লোড হচ্ছে...</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Custom Alert Modal -->
+  <div id="custom-alert" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+    <div class="card-bg rounded-2xl p-6 w-full max-w-xs text-center border border-orange-500/50">
+      <p id="alert-message" class="mb-4 font-medium text-sm text-gray-200"></p>
+      <button id="alert-ok-btn" class="btn-accent px-6 py-2 rounded-xl text-sm w-full">ঠিক আছে</button>
+    </div>
+  </div>
+
+  <!-- Firebase & App Script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, onSnapshot, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDtiXO2UTHulLCpu2n68gjTVz_hNAwfZfc",
+      authDomain: "nightflixbot-20051.firebaseapp.com",
+      databaseURL: "https://nightflixbot-20051-default-rtdb.firebaseio.com",
+      projectId: "nightflixbot-20051",
+      storageBucket: "nightflixbot-20051.firebasestorage.app",
+      messagingSenderId: "177349593539",
+      appId: "1:177349593539:web:5df579568ae8ff3cca9576",
+      measurementId: "G-G764W09N5J"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const tg = window.Telegram?.WebApp;
+    if(tg) { tg.expand(); }
+
+    const telegramUserId = tg?.initDataUnsafe?.user?.id ? `tg_${tg.initDataUnsafe.user.id}` : getDeviceId();
+    let userData = null;
+
+    function getDeviceId() {
+      let id = localStorage.getItem('device_tg_id');
+      if(!id) {
+        id = 'user_' + Math.random().toString(36).substring(2, 12);
+        localStorage.setItem('device_tg_id', id);
+      }
+      return id;
+    }
+
+    const loader = document.getElementById('loader');
+
+    window.onload = () => {
+      lucide.createIcons();
+      initUserAccount();
+      loadVideos();
+    };
+
+    function initUserAccount() {
+      const userRef = doc(db, "users", telegramUserId);
+      onSnapshot(userRef, async (snap) => {
+        if (snap.exists()) {
+          userData = snap.data();
+        } else {
+          userData = {
+            uid: telegramUserId,
+            name: tg?.initDataUnsafe?.user?.first_name || "Telegram User",
+            keys: 0,
+            unlockedVideos: [],
+            createdAt: serverTimestamp()
+          };
+          await setDoc(userRef, userData);
+        }
+        document.getElementById('user-keys').textContent = userData.keys || 0;
+      });
+    }
+
+    function loadVideos() {
+      onSnapshot(collection(db, "videos"), (snap) => {
+        const trendingContainer = document.getElementById('trending-container');
+        const exclusiveContainer = document.getElementById('exclusive-container');
+        trendingContainer.innerHTML = '';
+        exclusiveContainer.innerHTML = '';
+
+        if (snap.empty) {
+          trendingContainer.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">কোনো ভিডিও পাওয়া যায়নি।</p>';
+          exclusiveContainer.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">কোনো ভিডিও পাওয়া যায়নি।</p>';
+          return;
+        }
+
+        snap.forEach(docSnap => {
+          const video = docSnap.data();
+          const videoId = docSnap.id;
+          const card = createVideoCard(videoId, video);
+
+          if (video.category === 'Trending' || video.category === 'ট্রেন্ডিং') {
+            trendingContainer.appendChild(card);
+          } else {
+            exclusiveContainer.appendChild(card);
+          }
+        });
+        lucide.createIcons();
+      });
+    }
+
+    function createVideoCard(id, video) {
+      const div = document.createElement('div');
+      div.className = "card-bg rounded-2xl overflow-hidden p-3 relative animate-fadeIn";
+
+      const isUnlocked = userData && userData.unlockedVideos && userData.unlockedVideos.includes(id);
+      const reqKeys = video.requiredKeys || 3;
+      
+      const imageUrl = video.image || video.imageUrl || video.thumbnail || 'https://via.placeholder.com/600x335?text=No+Image';
+
+      div.innerHTML = `
+        <div class="relative rounded-xl overflow-hidden mb-3 bg-black aspect-video flex items-center justify-center">
+          <img src="${imageUrl}" alt="${video.title}" class="w-full h-full object-cover">
+          <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+            <button onclick="playVideo('${id}', '${video.url}', ${reqKeys})" class="w-14 h-14 bg-white/90 text-orange-600 rounded-full flex items-center justify-center shadow-lg transition transform hover:scale-110">
+              <i data-lucide="${isUnlocked ? 'play' : 'lock'}" class="w-7 h-7 fill-current ml-0.5"></i>
+            </button>
+          </div>
+        </div>
+
+        <h3 class="font-bold text-sm text-white mb-3 line-clamp-1">${video.title}</h3>
+
+        <div class="flex items-center gap-2">
+          <button onclick="playVideo('${id}', '${video.url}', ${reqKeys})" class="flex-1 bg-[#232d48] text-white py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 hover:bg-[#2e3b5e]">
+            <i data-lucide="play" class="w-3.5 h-3.5"></i> ওয়াচ নাও 
+            <span class="bg-black/40 px-2 py-0.5 rounded-md text-[10px] border border-gray-700 ml-1">
+              🔑 ${isUnlocked ? 'আনলকড' : reqKeys}
+            </span>
+          </button>
+          <button onclick="playVideo('${id}', '${video.url}', ${reqKeys})" class="flex-1 bg-orange-500/20 text-orange-400 border border-orange-500/30 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 hover:bg-orange-500/30">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i> ডাউনলোড
+          </button>
+        </div>
+      `;
+      return div;
+    }
+
+    window.playVideo = async (videoId, url, reqKeys) => {
+      const isUnlocked = userData && userData.unlockedVideos && userData.unlockedVideos.includes(videoId);
+
+      if (isUnlocked) {
+        window.open(url, '_blank');
+        return;
+      }
+
+      if ((userData?.keys || 0) < reqKeys) {
+        showAlert(`ভিডিওটি দেখতে ${reqKeys}টি চাবি প্রয়োজন। এড দেখে আগে চাবি সংগ্রহ করুন!`);
+        return;
+      }
+
+      showLoader(true);
+      try {
+        const userRef = doc(db, "users", telegramUserId);
+        const newKeys = (userData.keys || 0) - reqKeys;
+        const unlocked = userData.unlockedVideos || [];
+        unlocked.push(videoId);
+
+        await updateDoc(userRef, {
+          keys: newKeys,
+          unlockedVideos: unlocked
+        });
+
+        await updateDoc(doc(db, "videos", videoId), {
+          views: increment(1)
+        });
+
+        showLoader(false);
+        showAlert("ভিডিও আনলক হয়েছে!");
+        window.open(url, '_blank');
+      } catch (err) {
+        showLoader(false);
+        showAlert("এরর: " + err.message);
+      }
+    };
+
+    // Rewarded Interstitial Ad Function Integration
+    window.watchAdForKeys = async () => {
+      if (typeof show_12085731 === 'function') {
+        showLoader(true);
+        show_12085731().then(async () => {
+          // Rewarded interstitial callback
+          alert('You have seen an ad!');
+          try {
+            const userRef = doc(db, "users", telegramUserId);
+            await updateDoc(userRef, {
+              keys: increment(1)
+            });
+            showAlert("অভিনন্দন! ১টি চাবি (Key) সফলভাবে যোগ হয়েছে।");
+          } catch (err) {
+            showAlert("চাবি যোগ করতে সমস্যা হয়েছে: " + err.message);
+          } finally {
+            showLoader(false);
+          }
+        }).catch((err) => {
+          showLoader(false);
+          showAlert("এড লোড হতে সমস্যা হয়েছে বা মাঝপথে বন্ধ করা হয়েছে।");
+        });
+      } else {
+        showAlert("এড সার্ভিস প্রস্তুত নয়। দয়া করে পেজটি রিফ্রেশ করুন।");
+      }
+    };
+
+    function showLoader(s) { loader.classList.toggle('hidden', !s); }
+
+    function showAlert(m) {
+      document.getElementById('alert-message').textContent = m;
+      document.getElementById('custom-alert').classList.remove('hidden');
+      document.getElementById('alert-ok-btn').onclick = () => document.getElementById('custom-alert').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
